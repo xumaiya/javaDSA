@@ -39,6 +39,11 @@ Thumbs.db
 backend/.env
 backend/target/
 backend/.jqwik-database
+backend/data/
+
+# Database files
+*.mv.db
+*.trace.db
 
 # Kiro specs (internal development)
 .kiro/

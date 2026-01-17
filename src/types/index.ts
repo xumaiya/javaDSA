@@ -72,16 +72,42 @@ export interface Badge {
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
-export interface LeaderboardEntry {
-  rank: number;
-  user: {
-    id: string;
-    username: string;
-    avatar?: string;
-  };
-  points: number;
-  streak: number;
-  level: number;
+// Quiz Types
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation: string;
+}
+
+export interface Quiz {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  title: string;
+  description: string;
+  questions: QuizQuestion[];
+  timeLimit: number; // in minutes
+  passingScore: number; // percentage
+}
+
+export interface QuizAttempt {
+  id: string;
+  quizId: string;
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  completedAt: string;
+  timeTaken: number; // in seconds
+}
+
+export interface QuizResult {
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  passed: boolean;
+  answers: { questionId: string; selectedAnswer: number; isCorrect: boolean }[];
 }
 
 // Chatbot Types

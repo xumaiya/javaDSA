@@ -93,11 +93,14 @@ public class ChatService {
                     .collect(Collectors.toList());
             String context = buildContext(chunks);
             
-            // Step 5: Call chat completion
-            String userPrompt = buildUserPrompt(request.getMessage(), context);
-            String aiResponse = openAIClient.createChatCompletion(SYSTEM_PROMPT, userPrompt);
+            // Step 5: Build conversation history for context
+            List<OpenAIClient.ChatMessage> conversationHistory = buildConversationHistory(request);
             
-            // Step 6: Extract related chapter references
+            // Step 6: Call chat completion with history
+            String userPrompt = buildUserPrompt(request.getMessage(), context);
+            String aiResponse = openAIClient.createChatCompletionWithHistory(SYSTEM_PROMPT, userPrompt, conversationHistory);
+            
+            // Step 7: Extract related chapter references
             List<ChapterReference> chapterReferences = extractChapterReferences(chunks);
             
             // Update ChatLog with response
@@ -121,6 +124,19 @@ public class ChatService {
             updateChatLogWithError(chatLog, "Error: " + e.getMessage());
             throw new RuntimeException("Failed to process question", e);
         }
+    }
+
+    /**
+     * Build conversation history from request for context.
+     */
+    private List<OpenAIClient.ChatMessage> buildConversationHistory(ChatRequest request) {
+        if (request.getConversationHistory() == null || request.getConversationHistory().isEmpty()) {
+            return Collections.emptyList();
+        }
+        
+        return request.getConversationHistory().stream()
+                .map(msg -> new OpenAIClient.ChatMessage(msg.getRole(), msg.getContent()))
+                .collect(Collectors.toList());
     }
 
     /**

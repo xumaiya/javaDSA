@@ -1,4 +1,4 @@
-import { Course, Chapter, Lesson, Badge, User, LeaderboardEntry } from '../types';
+import { Course, Chapter, Lesson, Badge, User } from '../types';
 
 // Mock Users
 export const mockUsers: User[] = [
@@ -72,20 +72,92 @@ export const mockBadges: Badge[] = [
 
 // Mock Lessons
 const createLessons = (chapterId: string, count: number, startOrder: number): Lesson[] => {
+  const lessonTitles: Record<string, string[]> = {
+    'chapter-1-1': [
+      'Introduction to Arrays',
+      'Array Operations and Algorithms', 
+      'Introduction to Linked Lists',
+      'Stacks - Last In, First Out',
+      'Queues - First In, First Out'
+    ],
+    'chapter-1-2': [
+      'Binary Trees Basics',
+      'Tree Traversals',
+      'Binary Search Trees',
+      'AVL Trees and Balancing',
+      'Heap Data Structure'
+    ],
+    'chapter-1-3': [
+      'Hash Tables Introduction',
+      'Hash Functions and Collisions',
+      'Hash Maps and Hash Sets',
+      'Applications of Hashing',
+      'Advanced Hashing Techniques'
+    ],
+    'chapter-1-4': [
+      'Graphs Introduction',
+      'Graph Representations',
+      'Depth-First Search (DFS)',
+      'Breadth-First Search (BFS)',
+      'Graph Applications'
+    ],
+  };
+
+  const titles = lessonTitles[chapterId] || Array.from({ length: count }, (_, i) => `Lesson ${i + 1}`);
+  
   return Array.from({ length: count }, (_, i) => ({
     id: `lesson-${chapterId}-${i + 1}`,
     chapterId,
-    title: `Lesson ${i + 1}`,
-    content: `# Lesson ${i + 1} Content\n\nThis is the content for lesson ${i + 1}. It contains markdown formatted text.\n\n## Key Concepts\n\n- Concept 1\n- Concept 2\n- Concept 3\n\n## Code Example\n\n\`\`\`java\npublic class Example {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}\n\`\`\`\n\n## Practice\n\nTry implementing this concept in your own code!`,
+    title: titles[i],
+    content: `# ${titles[i]}\n\nThis lesson covers important concepts about ${titles[i].toLowerCase()}. Content will be loaded from the course content library.\n\n## Practice\n\nTry the concepts you learned in the [Code Editor](/editor)!`,
     order: startOrder + i,
     duration: 15 + i * 5,
-    completed: i < 2, // First 2 lessons completed
-    unlocked: i === 0 || i <= 2, // First 3 lessons unlocked
+    completed: i < 2,
+    unlocked: i === 0 || i <= 2,
   }));
 };
 
 // Mock Chapters
 const createChapters = (courseId: string, count: number): Chapter[] => {
+  const chapterTitles: Record<string, string[]> = {
+    '1': ['Linear Data Structures', 'Trees and Hierarchical Structures', 'Hash-Based Structures', 'Graphs and Networks'],
+    '2': ['Sorting Algorithms', 'Searching Algorithms', 'Dynamic Programming'],
+    '3': ['Advanced Trees', 'Advanced Graphs'],
+    '4': ['Graph Traversal', 'Shortest Path Algorithms', 'Minimum Spanning Trees'],
+    '5': ['DP Fundamentals', 'DP Patterns', 'Advanced DP'],
+  };
+
+  const chapterDescriptions: Record<string, string[]> = {
+    '1': [
+      'Master arrays, linked lists, stacks, and queues - the building blocks of programming',
+      'Understand binary trees, BSTs, and tree traversal techniques',
+      'Learn about hash tables, hash functions, and collision resolution',
+      'Explore graph representations and basic graph algorithms'
+    ],
+    '2': [
+      'Learn bubble sort, merge sort, quick sort, and their complexities',
+      'Master linear search, binary search, and search optimizations',
+      'Understand memoization, tabulation, and solving optimization problems'
+    ],
+    '3': [
+      'Study AVL trees, Red-Black trees, B-trees, and Tries',
+      'Advanced graph algorithms including Dijkstra, Bellman-Ford, and Floyd-Warshall'
+    ],
+    '4': [
+      'Deep dive into DFS, BFS, and their applications',
+      'Learn Dijkstra\'s, Bellman-Ford, and A* algorithms',
+      'Master Kruskal\'s and Prim\'s algorithms for MST'
+    ],
+    '5': [
+      'Introduction to dynamic programming concepts and techniques',
+      'Common DP patterns: knapsack, LCS, LIS, and more',
+      'Complex DP problems and optimization strategies'
+    ],
+  };
+
+  const titles = chapterTitles[courseId] || Array.from({ length: count }, (_, i) => `Chapter ${i + 1}`);
+  const descriptions = chapterDescriptions[courseId] || Array.from({ length: count }, (_, i) => `Learn about chapter ${i + 1} concepts`);
+
   let lessonOrder = 1;
   return Array.from({ length: count }, (_, i) => {
     const lessons = createLessons(`chapter-${courseId}-${i + 1}`, 5, lessonOrder);
@@ -93,8 +165,8 @@ const createChapters = (courseId: string, count: number): Chapter[] => {
     return {
       id: `chapter-${courseId}-${i + 1}`,
       courseId,
-      title: `Chapter ${i + 1}`,
-      description: `Learn about chapter ${i + 1} concepts`,
+      title: titles[i],
+      description: descriptions[i],
       order: i + 1,
       lessons,
       progress: i === 0 ? 40 : i === 1 ? 20 : 0,
@@ -150,45 +222,6 @@ export const mockCourses: Course[] = [
     duration: 525,
     chapters: createChapters('5', 3),
     progress: 0,
-  },
-];
-
-// Mock Leaderboard
-export const mockLeaderboard: LeaderboardEntry[] = [
-  {
-    rank: 1,
-    user: { id: '1', username: 'alice_coder', avatar: undefined },
-    points: 1250,
-    streak: 7,
-    level: 5,
-  },
-  {
-    rank: 2,
-    user: { id: '2', username: 'bob_dev', avatar: undefined },
-    points: 980,
-    streak: 3,
-    level: 4,
-  },
-  {
-    rank: 3,
-    user: { id: '3', username: 'charlie_java', avatar: undefined },
-    points: 850,
-    streak: 5,
-    level: 4,
-  },
-  {
-    rank: 4,
-    user: { id: '4', username: 'diana_coder', avatar: undefined },
-    points: 720,
-    streak: 2,
-    level: 3,
-  },
-  {
-    rank: 5,
-    user: { id: '5', username: 'eve_algo', avatar: undefined },
-    points: 650,
-    streak: 4,
-    level: 3,
   },
 ];
 

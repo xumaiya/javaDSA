@@ -4,13 +4,14 @@ import {
   Home, 
   BookOpen, 
   MessageSquare, 
-  Trophy, 
+  Code2, 
   User, 
   LogOut, 
   Moon, 
   Sun,
   Menu,
   X,
+  ClipboardList,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
@@ -36,9 +37,9 @@ export const Layout = ({ children }: LayoutProps) => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/courses', label: 'Courses', icon: BookOpen },
+    { path: '/editor', label: 'Code Editor', icon: Code2 },
     { path: '/chatbot', label: 'Chatbot', icon: MessageSquare },
-    { path: '/badges', label: 'Badges', icon: Trophy },
-    { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+    { path: '/quizzes', label: 'Quizzes', icon: ClipboardList },
     { path: '/profile', label: 'Profile', icon: User },
   ];
 

@@ -14,8 +14,8 @@ import { Chapter } from './pages/Chapter';
 import { Lesson } from './pages/Lesson';
 import { Notes } from './pages/Notes';
 import { Chatbot } from './pages/Chatbot';
-import { Badges } from './pages/Badges';
-import { Leaderboard } from './pages/Leaderboard';
+import { CodeEditor } from './pages/CodeEditor';
+import { QuizPage } from './pages/Quiz';
 import { Profile } from './pages/Profile';
 
 function App() {
@@ -128,21 +128,21 @@ function App() {
             }
           />
           <Route
-            path="/badges"
+            path="/editor"
             element={
               <ProtectedRoute>
                 <Layout>
-                  <Badges />
+                  <CodeEditor />
                 </Layout>
               </ProtectedRoute>
             }
           />
           <Route
-            path="/leaderboard"
+            path="/quizzes"
             element={
               <ProtectedRoute>
                 <Layout>
-                  <Leaderboard />
+                  <QuizPage />
                 </Layout>
               </ProtectedRoute>
             }

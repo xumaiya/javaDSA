@@ -5,12 +5,12 @@ import {
   Lesson, 
   Note, 
   Badge, 
-  LeaderboardEntry,
   AuthResponse,
   ChatMessage,
   ApiResponse,
 } from '../types';
-import { mockUsers, mockCourses, mockBadges, mockLeaderboard } from './data';
+import { mockUsers, mockCourses, mockBadges } from './data';
+import { getLessonContent } from './courseContent';
 
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -154,7 +154,10 @@ class MockApiService {
     if (!chapter) throw new Error('Chapter not found');
     const lesson = chapter.lessons.find(l => l.id === lessonId);
     if (!lesson) throw new Error('Lesson not found');
-    return { data: lesson };
+    
+    // Load content from courseContent
+    const content = getLessonContent(lessonId);
+    return { data: { ...lesson, content } };
   }
 
   async completeLesson(lessonId: string): Promise<ApiResponse<Lesson>> {
@@ -253,12 +256,6 @@ class MockApiService {
     void userId;
     await delay(400);
     return { data: mockBadges.slice(0, 2) };
-  }
-
-  // Leaderboard
-  async getLeaderboard(limit = 10): Promise<ApiResponse<LeaderboardEntry[]>> {
-    await delay(500);
-    return { data: mockLeaderboard.slice(0, limit) };
   }
 
   // Chatbot

@@ -10,7 +10,6 @@ import type {
   Lesson,
   Note,
   Badge,
-  LeaderboardEntry,
   AuthResponse,
   ChatMessage,
   ApiResponse,
@@ -51,17 +50,72 @@ export interface UserProgress {
 // Example: return api.post('/auth/login', { email, password });
 
 class ApiService {
-  // Authentication
+  // Authentication - Real backend API calls
   async login(email: string, password: string): Promise<ApiResponse<AuthResponse>> {
-    return mockApi.login(email, password);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Invalid email or password');
+      }
+
+      const backendResponse = await response.json();
+      // Transform backend response to match frontend AuthResponse type
+      return {
+        data: {
+          user: backendResponse.data.user,
+          token: backendResponse.data.accessToken,
+        },
+      };
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Unable to connect to the server. Please check your connection.');
+      }
+      throw error;
+    }
   }
 
   async register(username: string, email: string, password: string): Promise<ApiResponse<AuthResponse>> {
-    return mockApi.register(username, email, password);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Registration failed');
+      }
+
+      const backendResponse = await response.json();
+      // Transform backend response to match frontend AuthResponse type
+      return {
+        data: {
+          user: backendResponse.data.user,
+          token: backendResponse.data.accessToken,
+        },
+      };
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Unable to connect to the server. Please check your connection.');
+      }
+      throw error;
+    }
   }
 
   async logout(): Promise<void> {
-    return mockApi.logout();
+    // Just clear local storage, no backend call needed
+    return Promise.resolve();
   }
 
   // User Progress - Real backend API calls
@@ -193,13 +247,11 @@ class ApiService {
     return mockApi.getUserBadges(userId);
   }
 
-  // Leaderboard
-  async getLeaderboard(limit?: number): Promise<ApiResponse<LeaderboardEntry[]>> {
-    return mockApi.getLeaderboard(limit);
-  }
-
-  // Chatbot - Real backend API call
-  async sendChatMessage(message: string, _conversationId?: string): Promise<ApiResponse<ChatMessage>> {
+  // Chatbot - Real backend API call with conversation history
+  async sendChatMessage(
+    message: string, 
+    conversationHistory?: Array<{ role: string; content: string }>
+  ): Promise<ApiResponse<ChatMessage>> {
     const token = getAuthToken();
     
     if (!token) {
@@ -213,7 +265,10 @@ class ApiService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ 
+          message,
+          conversationHistory: conversationHistory || [],
+        }),
       });
 
       if (!response.ok) {

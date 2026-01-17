@@ -127,6 +127,19 @@ public class OpenAIClient {
      * @throws OpenAIException if the API call fails
      */
     public String createChatCompletion(String systemPrompt, String userMessage) {
+        return createChatCompletionWithHistory(systemPrompt, userMessage, null);
+    }
+
+    /**
+     * Creates a chat completion with conversation history.
+     * 
+     * @param systemPrompt The system prompt to set context
+     * @param userMessage The user's current message/question
+     * @param conversationHistory Previous messages in the conversation
+     * @return The assistant's response content
+     * @throws OpenAIException if the API call fails
+     */
+    public String createChatCompletionWithHistory(String systemPrompt, String userMessage, List<ChatMessage> conversationHistory) {
         if (userMessage == null || userMessage.isBlank()) {
             throw new OpenAIException("User message cannot be empty");
         }
@@ -137,10 +150,22 @@ public class OpenAIClient {
         request.setModel(properties.getChatModel());
         request.setMaxTokens(properties.getMaxTokens());
         request.setTemperature(properties.getTemperature());
-        request.setMessages(List.of(
-                new ChatMessage("system", systemPrompt != null ? systemPrompt : "You are a helpful assistant."),
-                new ChatMessage("user", userMessage)
-        ));
+        
+        // Build messages list with history
+        List<ChatMessage> messages = new java.util.ArrayList<>();
+        messages.add(new ChatMessage("system", systemPrompt != null ? systemPrompt : "You are a helpful assistant."));
+        
+        // Add conversation history (limit to last 10 messages to avoid token limits)
+        if (conversationHistory != null && !conversationHistory.isEmpty()) {
+            int startIdx = Math.max(0, conversationHistory.size() - 10);
+            for (int i = startIdx; i < conversationHistory.size(); i++) {
+                messages.add(conversationHistory.get(i));
+            }
+        }
+        
+        // Add current user message
+        messages.add(new ChatMessage("user", userMessage));
+        request.setMessages(messages);
         
         try {
             ChatCompletionResponse response = webClient.post()
@@ -218,13 +243,13 @@ public class OpenAIClient {
     }
     
     @Data
-    static class ChatMessage {
+    public static class ChatMessage {
         private String role;
         private String content;
         
-        ChatMessage() {}
+        public ChatMessage() {}
         
-        ChatMessage(String role, String content) {
+        public ChatMessage(String role, String content) {
             this.role = role;
             this.content = content;
         }
