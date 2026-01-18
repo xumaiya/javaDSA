@@ -118,25 +118,27 @@ const ChatMessageBubble = ({ message }: { message: ChatMessage }) => {
 };
 
 const EmptyState = ({ onSuggestionClick }: { onSuggestionClick: (q: string) => void }) => (
-  <div className="flex flex-col items-center justify-center h-full text-center px-4">
-    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-olive-light to-olive dark:from-dark-surface-hover dark:to-dark-surface flex items-center justify-center mb-6 shadow-lg">
-      <Sparkles className="h-10 w-10 text-white dark:text-dark-accent" />
+  <div className="flex flex-col items-center justify-center h-full text-center px-4 animate-fade-in">
+    <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-olive via-olive-dark to-olive dark:from-dark-accent dark:via-green-500 dark:to-dark-accent flex items-center justify-center mb-6 shadow-2xl animate-float-slow">
+      <Sparkles className="h-12 w-12 text-white animate-pulse" />
     </div>
-    <h3 className="text-xl font-semibold text-olive-dark dark:text-dark-text mb-2">DSA Learning Assistant</h3>
+    <h3 className="text-2xl font-bold bg-gradient-to-r from-olive-dark to-olive dark:from-dark-text dark:to-dark-accent bg-clip-text text-transparent mb-2">
+      DSA Learning Assistant
+    </h3>
     <p className="text-text-muted dark:text-dark-text-muted mb-8 max-w-md">
       Ask me anything about Data Structures and Algorithms. I can explain concepts, help with code, and guide your learning journey.
     </p>
     
     <div className="w-full max-w-lg">
-      <p className="text-sm text-text-muted dark:text-dark-text-muted mb-3">Try asking:</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4 font-medium">Try asking:</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {SUGGESTED_QUESTIONS.map((question, index) => (
           <button
             key={index}
             onClick={() => onSuggestionClick(question)}
-            className="text-left px-4 py-3 rounded-xl border border-olive-light/50 dark:border-dark-border hover:bg-olive-light/20 dark:hover:bg-dark-surface-hover hover:border-olive dark:hover:border-dark-accent transition-all duration-200 text-sm text-olive-dark dark:text-dark-text"
+            className="text-left px-4 py-3 rounded-2xl backdrop-blur-sm bg-white/50 dark:bg-dark-surface/50 border border-olive-light/50 dark:border-dark-border hover:bg-white/80 dark:hover:bg-dark-surface/80 hover:border-olive dark:hover:border-dark-accent hover:scale-105 hover:shadow-lg transition-all duration-300 text-sm text-olive-dark dark:text-dark-text group"
           >
-            <MessageSquare className="h-4 w-4 inline-block mr-2 text-olive dark:text-dark-accent" />
+            <MessageSquare className="h-4 w-4 inline-block mr-2 text-olive dark:text-dark-accent group-hover:scale-110 transition-transform" />
             {question}
           </button>
         ))}
@@ -248,21 +250,30 @@ export const Chatbot = () => {
 
   return (
     <div className="h-[calc(100vh-12rem)] flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+      {/* Header with Glass Morphism */}
+      <div className="flex items-center justify-between mb-6 p-4 rounded-2xl backdrop-blur-xl bg-white/50 dark:bg-dark-surface/50 border border-olive-light/30 dark:border-dark-border/50 shadow-lg">
         <div>
-          <h1 className="text-2xl font-bold text-olive-dark dark:text-dark-text">AI Chatbot</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-olive-dark to-olive dark:from-dark-text dark:to-dark-accent bg-clip-text text-transparent">
+            AI Chatbot
+          </h1>
           <p className="text-text-muted dark:text-dark-text-muted text-sm mt-0.5">
             {user?.username ? `Hi ${user.username}! ` : ''}Ask me anything about DSA
           </p>
         </div>
         {messages.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={handleClearChat} className="text-text-muted hover:text-red-500 dark:text-dark-text-muted dark:hover:text-red-400">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleClearChat} 
+            className="text-text-muted hover:text-red-500 dark:text-dark-text-muted dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 backdrop-blur-sm transition-all duration-300"
+          >
             <Trash2 className="h-4 w-4 mr-1.5" />Clear
           </Button>
         )}
       </div>
 
-      <div className="flex-1 flex flex-col bg-gradient-to-b from-olive-pale/30 to-white dark:from-dark-surface/50 dark:to-dark-bg rounded-2xl shadow-sm border border-olive-light/30 dark:border-dark-border overflow-hidden">
+      {/* Chat Container with Enhanced Glass Morphism */}
+      <div className="flex-1 flex flex-col backdrop-blur-2xl bg-gradient-to-br from-white/60 via-olive-pale/20 to-white/60 dark:from-dark-surface/60 dark:via-dark-bg/40 dark:to-dark-surface/60 rounded-3xl shadow-2xl border border-olive-light/30 dark:border-dark-border/50 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {messages.length === 0 ? (
             <EmptyState onSuggestionClick={(q) => handleSend(undefined, q)} />
@@ -306,7 +317,8 @@ export const Chatbot = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t border-olive-light/30 dark:border-dark-border bg-white dark:bg-dark-surface p-4">
+        {/* Input Area with Glass Morphism */}
+        <div className="border-t border-olive-light/30 dark:border-dark-border/50 backdrop-blur-xl bg-white/80 dark:bg-dark-surface/80 p-4">
           <form onSubmit={handleSend} className="flex items-end gap-3">
             <div className="flex-1 relative">
               <textarea
@@ -315,7 +327,7 @@ export const Chatbot = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask a question about DSA... (Shift+Enter for new line)"
-                className="w-full resize-none rounded-xl border border-olive-light/50 dark:border-dark-border bg-olive-pale/30 dark:bg-dark-bg px-4 py-3 text-olive-dark dark:text-dark-text placeholder-text-muted dark:placeholder-dark-text-muted focus:outline-none focus:ring-2 focus:ring-olive/50 dark:focus:ring-dark-accent/50 focus:border-olive dark:focus:border-dark-accent transition-all duration-200 min-h-[48px] max-h-[150px]"
+                className="w-full resize-none rounded-2xl border border-olive-light/50 dark:border-dark-border backdrop-blur-sm bg-white/70 dark:bg-dark-bg/70 px-4 py-3 text-olive-dark dark:text-dark-text placeholder-text-muted dark:placeholder-dark-text-muted focus:outline-none focus:ring-2 focus:ring-olive/50 dark:focus:ring-dark-accent/50 focus:border-olive dark:focus:border-dark-accent transition-all duration-300 min-h-[48px] max-h-[150px] shadow-sm"
                 rows={1}
                 disabled={isLoading}
               />
@@ -323,7 +335,7 @@ export const Chatbot = () => {
             <Button 
               type="submit" 
               disabled={isLoading || !input.trim()}
-              className="h-12 w-12 rounded-xl bg-olive hover:bg-olive-dark dark:bg-dark-accent dark:hover:bg-dark-accent/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="h-12 w-12 rounded-2xl bg-gradient-to-r from-olive to-olive-dark dark:from-dark-accent dark:to-green-500 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-300 shadow-lg"
             >
               <Send className="h-5 w-5" />
             </Button>

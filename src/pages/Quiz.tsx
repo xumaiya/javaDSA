@@ -179,47 +179,51 @@ const QuizList = ({ quizzes, onStartQuiz, attempts }: {
   onStartQuiz: (quiz: Quiz) => void;
   attempts: Record<string, QuizResult>;
 }) => (
-  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-    {quizzes.map((quiz) => {
+  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    {quizzes.map((quiz, index) => {
       const attempt = attempts[quiz.id];
       const hasPassed = attempt?.passed;
       
       return (
-        <Card key={quiz.id} className="hover:shadow-md transition-shadow">
+        <Card 
+          key={quiz.id} 
+          className="backdrop-blur-xl bg-white/60 dark:bg-dark-surface/60 border-olive-light/30 dark:border-dark-border/50 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-500 animate-fade-in"
+          style={{ animationDelay: `${index * 100}ms` }}
+        >
           <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-12 h-12 rounded-xl bg-olive-light/50 dark:bg-dark-surface-hover flex items-center justify-center">
-                <ClipboardList className="h-6 w-6 text-olive dark:text-dark-accent" />
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-olive to-olive-dark dark:from-dark-accent dark:to-green-500 flex items-center justify-center shadow-lg">
+                <ClipboardList className="h-7 w-7 text-white" />
               </div>
               {attempt && (
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                <div className={`px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
                   hasPassed 
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    ? 'bg-green-100/80 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-700' 
+                    : 'bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-700'
                 }`}>
-                  {hasPassed ? 'Passed' : 'Not Passed'}
+                  {hasPassed ? '✓ Passed' : '✗ Not Passed'}
                 </div>
               )}
             </div>
             
-            <h3 className="font-semibold text-olive-dark dark:text-dark-text mb-1">{quiz.title}</h3>
+            <h3 className="font-bold text-lg text-olive-dark dark:text-dark-text mb-2">{quiz.title}</h3>
             <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4 line-clamp-2">{quiz.description}</p>
             
-            <div className="flex items-center gap-4 text-sm text-text-muted dark:text-dark-text-muted mb-4">
-              <span className="flex items-center gap-1">
-                <Target className="h-4 w-4" />
+            <div className="flex items-center gap-4 text-sm text-text-muted dark:text-dark-text-muted mb-4 p-3 rounded-xl backdrop-blur-sm bg-olive-pale/30 dark:bg-dark-bg/30">
+              <span className="flex items-center gap-1.5">
+                <Target className="h-4 w-4 text-olive dark:text-dark-accent" />
                 {quiz.questions.length} questions
               </span>
-              <span className="flex items-center gap-1">
-                <Timer className="h-4 w-4" />
+              <span className="flex items-center gap-1.5">
+                <Timer className="h-4 w-4 text-olive dark:text-dark-accent" />
                 {quiz.timeLimit} min
               </span>
             </div>
 
             {attempt && (
-              <div className="mb-4 p-3 rounded-lg bg-olive-pale/50 dark:bg-dark-surface">
+              <div className="mb-4 p-4 rounded-xl backdrop-blur-sm bg-olive-pale/50 dark:bg-dark-surface/50 border border-olive-light/30 dark:border-dark-border/50">
                 <p className="text-sm text-olive-dark dark:text-dark-text">
-                  Last Score: <span className="font-semibold">{attempt.score}%</span>
+                  Last Score: <span className="font-bold text-lg">{attempt.score}%</span>
                   <span className="text-text-muted dark:text-dark-text-muted ml-2">
                     ({attempt.correctAnswers}/{attempt.totalQuestions} correct)
                   </span>
@@ -229,7 +233,7 @@ const QuizList = ({ quizzes, onStartQuiz, attempts }: {
             
             <Button 
               onClick={() => onStartQuiz(quiz)} 
-              className="w-full"
+              className={`w-full ${attempt ? 'backdrop-blur-sm bg-white/50 dark:bg-dark-surface/50 hover:bg-white/80 dark:hover:bg-dark-surface/80' : 'bg-gradient-to-r from-olive to-olive-dark dark:from-dark-accent dark:to-green-500 shadow-lg'} hover:scale-105 transition-all duration-300`}
               variant={attempt ? 'outline' : 'primary'}
             >
               {attempt ? 'Retake Quiz' : 'Start Quiz'}
@@ -652,26 +656,32 @@ export const QuizPage = () => {
     <div className="space-y-6">
       {quizMode === 'list' && (
         <>
-          <div>
-            <h1 className="text-2xl font-bold text-olive-dark dark:text-dark-text">Quizzes</h1>
-            <p className="text-text-muted dark:text-dark-text-muted mt-1">
+          {/* Header with Glass Morphism */}
+          <div className="p-6 rounded-3xl backdrop-blur-xl bg-gradient-to-r from-white/60 to-olive-pale/40 dark:from-dark-surface/60 dark:to-dark-bg/60 border border-olive-light/30 dark:border-dark-border/50 shadow-xl">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-olive-dark to-olive dark:from-dark-text dark:to-dark-accent bg-clip-text text-transparent">
+              Quizzes
+            </h1>
+            <p className="text-text-muted dark:text-dark-text-muted mt-2">
               Test your knowledge with quizzes from your enrolled courses
             </p>
           </div>
 
           {quizzes.length === 0 ? (
-            <Card>
+            <Card className="backdrop-blur-xl bg-white/60 dark:bg-dark-surface/60 border-olive-light/30 dark:border-dark-border/50 shadow-xl">
               <CardContent className="p-12 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-olive-light/30 dark:bg-dark-surface flex items-center justify-center">
-                  <BookOpen className="h-8 w-8 text-olive dark:text-dark-accent" />
+                <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-olive-light/50 to-olive/30 dark:from-dark-surface dark:to-dark-surface-hover flex items-center justify-center animate-float-slow">
+                  <BookOpen className="h-10 w-10 text-olive dark:text-dark-accent" />
                 </div>
-                <h3 className="text-lg font-semibold text-olive-dark dark:text-dark-text mb-2">
+                <h3 className="text-xl font-bold text-olive-dark dark:text-dark-text mb-2">
                   No Quizzes Available
                 </h3>
-                <p className="text-text-muted dark:text-dark-text-muted mb-4">
+                <p className="text-text-muted dark:text-dark-text-muted mb-6">
                   Enroll in courses to unlock quizzes and test your knowledge.
                 </p>
-                <Button onClick={() => navigate('/courses')}>
+                <Button 
+                  onClick={() => navigate('/courses')}
+                  className="bg-gradient-to-r from-olive to-olive-dark dark:from-dark-accent dark:to-green-500 hover:scale-105 shadow-lg transition-all duration-300"
+                >
                   Browse Courses
                 </Button>
               </CardContent>

@@ -46,22 +46,24 @@ export const Layout = ({ children }: LayoutProps) => {
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <div className="min-h-screen bg-background dark:bg-dark-bg">
-      {/* Navigation */}
-      <nav className="bg-surface dark:bg-dark-surface border-b border-olive-light dark:border-dark-border sticky top-0 z-40 shadow-soft backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
+    <div className="min-h-screen bg-gradient-to-br from-olive-pale/20 via-background to-olive-pale/10 dark:from-dark-bg dark:via-dark-bg dark:to-dark-surface/30">
+      {/* Navigation with Glass Morphism */}
+      <nav className="sticky top-0 z-40 backdrop-blur-xl bg-white/70 dark:bg-dark-surface/70 border-b border-olive-light/30 dark:border-dark-border/50 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2 group">
-                <BookOpen className="h-8 w-8 text-olive dark:text-dark-accent group-hover:text-olive-dark dark:group-hover:text-green-300 transition-colors" />
-                <span className="text-xl font-bold text-olive-dark dark:text-dark-text">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-olive to-olive-dark dark:from-dark-accent dark:to-green-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <BookOpen className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-olive-dark to-olive dark:from-dark-text dark:to-dark-accent bg-clip-text text-transparent">
                   DSA Platform
                 </span>
               </Link>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex md:items-center md:space-x-4">
+            <div className="hidden md:flex md:items-center md:space-x-2">
               {isAuthenticated ? (
                 <>
                   {navItems.map((item) => {
@@ -70,10 +72,10 @@ export const Layout = ({ children }: LayoutProps) => {
                       <Link
                         key={item.path}
                         to={item.path}
-                        className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                           isActive(item.path)
-                            ? 'bg-olive dark:bg-dark-accent text-white dark:text-dark-bg shadow-soft'
-                            : 'text-olive-dark dark:text-dark-text hover:bg-olive-light dark:hover:bg-dark-surface-hover'
+                            ? 'bg-gradient-to-r from-olive to-olive-dark dark:from-dark-accent dark:to-green-500 text-white shadow-lg scale-105'
+                            : 'text-olive-dark dark:text-dark-text hover:bg-white/50 dark:hover:bg-dark-surface-hover/50 backdrop-blur-sm'
                         }`}
                       >
                         <Icon size={18} />
@@ -81,18 +83,25 @@ export const Layout = ({ children }: LayoutProps) => {
                       </Link>
                     );
                   })}
-                  <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-olive-light dark:border-dark-border">
+                  <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-olive-light/30 dark:border-dark-border/50">
                     <button
                       onClick={toggleTheme}
-                      className="p-2 rounded-lg text-olive-dark dark:text-dark-text hover:bg-olive-light dark:hover:bg-dark-surface-hover transition-colors"
+                      className="p-2 rounded-xl text-olive-dark dark:text-dark-text hover:bg-white/50 dark:hover:bg-dark-surface-hover/50 backdrop-blur-sm transition-all duration-300 hover:scale-110"
                       aria-label="Toggle theme"
                     >
                       {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
-                    <span className="text-sm text-olive-dark dark:text-dark-text font-medium">
-                      {user?.username}
-                    </span>
-                    <Button variant="ghost" size="sm" onClick={handleLogout}>
+                    <div className="px-3 py-1.5 rounded-xl bg-olive-light/30 dark:bg-dark-surface/50 backdrop-blur-sm">
+                      <span className="text-sm text-olive-dark dark:text-dark-text font-medium">
+                        {user?.username}
+                      </span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleLogout}
+                      className="hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300"
+                    >
                       <LogOut size={18} />
                     </Button>
                   </div>
@@ -127,9 +136,9 @@ export const Layout = ({ children }: LayoutProps) => {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation with Glass Morphism */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-olive-light dark:border-dark-border bg-surface dark:bg-dark-surface">
+          <div className="md:hidden border-t border-olive-light/30 dark:border-dark-border/50 backdrop-blur-xl bg-white/80 dark:bg-dark-surface/80">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {isAuthenticated ? (
                 <>
@@ -140,10 +149,10 @@ export const Layout = ({ children }: LayoutProps) => {
                         key={item.path}
                         to={item.path}
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-base font-medium transition-all ${
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-base font-medium transition-all duration-300 ${
                           isActive(item.path)
-                            ? 'bg-olive dark:bg-dark-accent text-white dark:text-dark-bg shadow-soft'
-                            : 'text-olive-dark dark:text-dark-text hover:bg-olive-light dark:hover:bg-dark-surface-hover'
+                            ? 'bg-gradient-to-r from-olive to-olive-dark dark:from-dark-accent dark:to-green-500 text-white shadow-lg'
+                            : 'text-olive-dark dark:text-dark-text hover:bg-white/50 dark:hover:bg-dark-surface-hover/50 backdrop-blur-sm'
                         }`}
                       >
                         <Icon size={20} />
@@ -151,16 +160,18 @@ export const Layout = ({ children }: LayoutProps) => {
                       </Link>
                     );
                   })}
-                  <div className="pt-2 border-t border-olive-light dark:border-dark-border">
-                    <div className="px-3 py-2 text-sm text-olive-dark dark:text-dark-text font-medium">
-                      {user?.username}
+                  <div className="pt-2 mt-2 border-t border-olive-light/30 dark:border-dark-border/50">
+                    <div className="px-3 py-2 mb-1 rounded-xl bg-olive-light/30 dark:bg-dark-surface/50 backdrop-blur-sm">
+                      <span className="text-sm text-olive-dark dark:text-dark-text font-medium">
+                        {user?.username}
+                      </span>
                     </div>
                     <button
                       onClick={() => {
                         handleLogout();
                         setMobileMenuOpen(false);
                       }}
-                      className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-base font-medium text-olive-dark dark:text-dark-text hover:bg-olive-light dark:hover:bg-dark-surface-hover transition-colors"
+                      className="flex items-center space-x-2 w-full px-3 py-2 rounded-xl text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 backdrop-blur-sm transition-all duration-300"
                     >
                       <LogOut size={20} />
                       <span>Logout</span>
