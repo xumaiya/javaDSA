@@ -1,6 +1,6 @@
 import { Course, Chapter, Lesson, Badge, User } from '../types';
 
-// Mock Users
+// Mock Users - TEST DATA ONLY (Not used in production, only for property-based tests)
 export const mockUsers: User[] = [
   {
     id: '1',
@@ -102,8 +102,8 @@ const createLessons = (chapterId: string, count: number, startOrder: number): Le
     content: `# ${titles[i]}\n\nThis lesson covers important concepts about ${titles[i].toLowerCase()}. Content will be loaded from the course content library.\n\n## Practice\n\nTry the concepts you learned in the [Code Editor](/editor)!`,
     order: startOrder + i,
     duration: 15 + i * 5,
-    completed: i < 2,
-    unlocked: i === 0 || i <= 2,
+    completed: false, // Will be determined dynamically from backend
+    unlocked: i === 0 || i <= 2, // First 3 lessons unlocked by default
   }));
 };
 
@@ -168,7 +168,7 @@ const createChapters = (courseId: string, count: number): Chapter[] => {
       description: descriptions[i],
       order: i + 1,
       lessons,
-      progress: i === 0 ? 40 : i === 1 ? 20 : 0,
+      progress: 0, // Will be calculated dynamically based on completed lessons
       unlocked: i === 0 || i === 1,
     };
   });
@@ -183,7 +183,7 @@ export const mockCourses: Course[] = [
     difficulty: 'beginner',
     duration: 180,
     chapters: createChapters('1', 3),
-    progress: 25,
+    progress: 0, // Will be calculated dynamically
     enrolledAt: '2024-01-15T10:00:00Z',
   },
   {
@@ -193,7 +193,7 @@ export const mockCourses: Course[] = [
     difficulty: 'beginner',
     duration: 200,
     chapters: createChapters('2', 3),
-    progress: 0,
+    progress: 0, // Will be calculated dynamically
   },
   {
     id: '3',
@@ -202,7 +202,7 @@ export const mockCourses: Course[] = [
     difficulty: 'beginner',
     duration: 160,
     chapters: createChapters('3', 2),
-    progress: 0,
+    progress: 0, // Will be calculated dynamically
   },
   {
     id: '4',
@@ -211,7 +211,7 @@ export const mockCourses: Course[] = [
     difficulty: 'intermediate',
     duration: 240,
     chapters: createChapters('4', 3),
-    progress: 0,
+    progress: 0, // Will be calculated dynamically
   },
   {
     id: '5',
@@ -220,7 +220,7 @@ export const mockCourses: Course[] = [
     difficulty: 'intermediate',
     duration: 180,
     chapters: createChapters('5', 2),
-    progress: 0,
+    progress: 0, // Will be calculated dynamically
   },
   {
     id: '6',
@@ -229,7 +229,7 @@ export const mockCourses: Course[] = [
     difficulty: 'intermediate',
     duration: 160,
     chapters: createChapters('6', 2),
-    progress: 0,
+    progress: 0, // Will be calculated dynamically
   },
   {
     id: '7',
@@ -238,7 +238,7 @@ export const mockCourses: Course[] = [
     difficulty: 'advanced',
     duration: 280,
     chapters: createChapters('7', 3),
-    progress: 0,
+    progress: 0, // Will be calculated dynamically
   },
 ];
 

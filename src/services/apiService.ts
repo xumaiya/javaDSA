@@ -46,6 +46,28 @@ export interface UserProgress {
   completedLessonIds: number[];
 }
 
+// Lesson content response type
+export interface LessonContentResponse {
+  lessonId: string;
+  lessonTitle: string;
+  topic: string;
+  content: string;  // Markdown content
+  generatedAt: string;
+  cached: boolean;
+}
+
+// User stats response type
+export interface UserStatsResponse {
+  points: number;
+  streak: number;
+  level: number;
+  completedLessonsCount: number;
+  enrolledCoursesCount: number;
+  averageProgress: number;
+  weeklyActivity: number[]; // 7 days (Mon-Sun)
+  pointsThisWeek: number;
+}
+
 // In production, replace mockApi calls with actual axios calls to the backend
 // Example: return api.post('/auth/login', { email, password });
 
@@ -158,6 +180,58 @@ class ApiService {
     }
   }
 
+  async getUserStats(): Promise<ApiResponse<UserStatsResponse>> {
+    const token = getAuthToken();
+    
+    if (!token) {
+      throw new Error('Authentication required. Please log in.');
+    }
+
+    console.log('📊 [apiService] Fetching user stats...');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/stats`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      console.log(`📥 [apiService] Stats response status: ${response.status}`);
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Session expired. Please log in again.');
+        }
+        throw new Error('Failed to fetch user stats.');
+      }
+
+      const backendResponse: BackendApiResponse<UserStatsResponse> = await response.json();
+      console.log('✅ [apiService] Stats received:', backendResponse.data);
+      
+      return { data: backendResponse.data };
+    } catch (error) {
+      console.error('💥 [apiService] Error fetching stats:', error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        // Network error - return default stats
+        return { 
+          data: { 
+            points: 0,
+            streak: 0,
+            level: 1,
+            completedLessonsCount: 0,
+            enrolledCoursesCount: 0,
+            averageProgress: 0,
+            weeklyActivity: [0, 0, 0, 0, 0, 0, 0],
+            pointsThisWeek: 0
+          } 
+        };
+      }
+      throw error;
+    }
+  }
+
   async completeLessonOnBackend(lessonId: string): Promise<ApiResponse<void>> {
     const token = getAuthToken();
     
@@ -190,6 +264,51 @@ class ApiService {
     }
   }
 
+  async getLessonContent(lessonId: string, lessonTitle: string, topic: string): Promise<ApiResponse<LessonContentResponse>> {
+    const token = getAuthToken();
+    
+    if (!token) {
+      throw new Error('Authentication required. Please log in.');
+    }
+
+    console.log(`📚 [apiService] Fetching content for lesson: ${lessonTitle}`);
+
+    try {
+      const url = `${API_BASE_URL}/lessons/${encodeURIComponent(lessonId)}/content?lessonTitle=${encodeURIComponent(lessonTitle)}&topic=${encodeURIComponent(topic)}`;
+      console.log(`🌐 [apiService] URL: ${url}`);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      console.log(`📥 [apiService] Response status: ${response.status}`);
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Session expired. Please log in again.');
+        }
+        const errorText = await response.text();
+        console.error('❌ [apiService] Error:', errorText);
+        throw new Error('Failed to fetch lesson content.');
+      }
+
+      const backendResponse: BackendApiResponse<LessonContentResponse> = await response.json();
+      console.log(`✅ [apiService] Content received (${backendResponse.data.cached ? 'cached' : 'generated'})`);
+      
+      return { data: backendResponse.data };
+    } catch (error) {
+      console.error('💥 [apiService] Error fetching lesson content:', error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Unable to connect to the server. Please check your connection.');
+      }
+      throw error;
+    }
+  }
+
   // Courses
   async getCourses(): Promise<ApiResponse<Course[]>> {
     return mockApi.getCourses();
@@ -200,7 +319,65 @@ class ApiService {
   }
 
   async enrollInCourse(courseId: string): Promise<ApiResponse<Course>> {
-    return mockApi.enrollInCourse(courseId);
+    const token = getAuthToken();
+    
+    if (!token) {
+      throw new Error('Authentication required. Please log in.');
+    }
+
+    try {
+      // First, enroll in backend
+      const response = await fetch(`${API_BASE_URL}/courses/${courseId}/enroll`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Session expired. Please log in again.');
+        }
+        throw new Error('Failed to enroll in course.');
+      }
+
+      // Also enroll in mock API for local state
+      return mockApi.enrollInCourse(courseId);
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        // Network error - fallback to mock only
+        return mockApi.enrollInCourse(courseId);
+      }
+      throw error;
+    }
+  }
+
+  async getEnrolledCourses(): Promise<ApiResponse<string[]>> {
+    const token = getAuthToken();
+    
+    if (!token) {
+      return { data: [] };
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/courses/enrolled`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        return { data: [] };
+      }
+
+      const backendResponse: BackendApiResponse<string[]> = await response.json();
+      return { data: backendResponse.data };
+    } catch (error) {
+      return { data: [] };
+    }
   }
 
   // Chapters
@@ -240,11 +417,63 @@ class ApiService {
 
   // Badges
   async getBadges(): Promise<ApiResponse<Badge[]>> {
-    return mockApi.getBadges();
+    const token = getAuthToken();
+    
+    if (!token) {
+      // If not authenticated, return mock badges
+      return mockApi.getBadges();
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/badges`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        // Fallback to mock on error
+        return mockApi.getBadges();
+      }
+
+      const backendResponse: BackendApiResponse<Badge[]> = await response.json();
+      return { data: backendResponse.data };
+    } catch (error) {
+      // Fallback to mock on error
+      return mockApi.getBadges();
+    }
   }
 
   async getUserBadges(userId: string): Promise<ApiResponse<Badge[]>> {
-    return mockApi.getUserBadges(userId);
+    const token = getAuthToken();
+    
+    if (!token) {
+      // If not authenticated, return empty array
+      return { data: [] };
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/badges/user/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        // Return empty array on error
+        return { data: [] };
+      }
+
+      const backendResponse: BackendApiResponse<Badge[]> = await response.json();
+      return { data: backendResponse.data };
+    } catch (error) {
+      // Return empty array on error
+      return { data: [] };
+    }
   }
 
   // Chatbot - Real backend API call with conversation history

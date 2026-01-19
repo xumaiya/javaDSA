@@ -5,22 +5,52 @@ import { useCourses } from '../hooks/useCourses';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useEffect, useState } from 'react';
+import { apiService, UserStatsResponse } from '../services/apiService';
 
 export const Dashboard = () => {
   const { user } = useAuthStore();
   const { courses, loading } = useCourses();
   const [mounted, setMounted] = useState(false);
+  const [stats, setStats] = useState<UserStatsResponse | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Fetch user stats from backend
+    const fetchStats = async () => {
+      try {
+        console.log('📊 Fetching user stats...');
+        const response = await apiService.getUserStats();
+        console.log('✅ Stats loaded:', response.data);
+        setStats(response.data);
+      } catch (error) {
+        console.error('❌ Failed to load stats:', error);
+        // Use fallback stats
+        setStats({
+          points: user?.points || 0,
+          streak: user?.streak || 0,
+          level: user?.level || 1,
+          completedLessonsCount: 0,
+          enrolledCoursesCount: 0,
+          averageProgress: 0,
+          weeklyActivity: [0, 0, 0, 0, 0, 0, 0],
+          pointsThisWeek: 0
+        });
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    
+    fetchStats();
+  }, [user]);
 
   const enrolledCourses = courses.filter(c => c.enrolledAt);
   const totalProgress = enrolledCourses.length > 0
     ? enrolledCourses.reduce((sum, c) => sum + c.progress, 0) / enrolledCourses.length
     : 0;
 
-  if (loading) {
+  if (loading || statsLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
@@ -34,6 +64,13 @@ export const Dashboard = () => {
       </div>
     );
   }
+
+  // Use stats from backend, fallback to user object
+  const displayPoints = stats?.points ?? user?.points ?? 0;
+  const displayStreak = stats?.streak ?? user?.streak ?? 0;
+  const displayLevel = stats?.level ?? user?.level ?? 1;
+  const displayPointsThisWeek = stats?.pointsThisWeek ?? 50;
+  const weeklyActivityData = stats?.weeklyActivity ?? [40, 65, 45, 80, 55, 90, 70];
 
   return (
     <div className="space-y-8 relative">
@@ -81,9 +118,9 @@ export const Dashboard = () => {
                     Total Points
                   </p>
                   <p className="text-3xl font-bold text-olive-dark dark:text-dark-text mt-2 animate-pulse">
-                    {user?.points || 0}
+                    {displayPoints}
                   </p>
-                  <p className="text-xs text-olive dark:text-dark-accent mt-1">+50 this week</p>
+                  <p className="text-xs text-olive dark:text-dark-accent mt-1">+{displayPointsThisWeek} this week</p>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-0 bg-olive/20 dark:bg-olive/30 rounded-full blur-md animate-pulse" />
@@ -106,9 +143,9 @@ export const Dashboard = () => {
                     Current Streak
                   </p>
                   <p className="text-3xl font-bold text-olive-dark dark:text-dark-text mt-2">
-                    {user?.streak || 0} <span className="text-lg">days</span>
+                    {displayStreak} <span className="text-lg">days</span>
                   </p>
-                  <p className="text-xs text-olive dark:text-dark-accent mt-1">Keep it up! 🔥</p>
+                  <p className="text-xs text-olive dark:text-dark-accent mt-1">{displayStreak > 0 ? 'Keep it up! 🔥' : 'Start your streak!'}</p>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-0 bg-orange-400/30 dark:bg-orange-500/40 rounded-full blur-md animate-pulse" />
@@ -131,9 +168,9 @@ export const Dashboard = () => {
                     Level
                   </p>
                   <p className="text-3xl font-bold text-olive-dark dark:text-dark-text mt-2">
-                    {user?.level || 1}
+                    {displayLevel}
                   </p>
-                  <p className="text-xs text-olive dark:text-dark-accent mt-1">Next: {((user?.level || 1) + 1) * 100} pts</p>
+                  <p className="text-xs text-olive dark:text-dark-accent mt-1">Next: {(displayLevel + 1) * 100} pts</p>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-0 bg-purple-400/30 dark:bg-purple-500/40 rounded-full blur-md animate-pulse" />
@@ -183,12 +220,12 @@ export const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-end justify-between h-32 gap-2">
-                {[40, 65, 45, 80, 55, 90, 70].map((height, i) => (
+                {weeklyActivityData.map((height, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-2">
                     <div 
                       className="w-full bg-gradient-to-t from-olive to-olive-light dark:from-dark-accent dark:to-green-400 rounded-t-lg transition-all duration-500 hover:scale-105 cursor-pointer relative group/bar"
                       style={{ 
-                        height: `${height}%`,
+                        height: `${Math.max(5, height)}%`,
                         animationDelay: `${i * 100}ms`
                       }}
                     >

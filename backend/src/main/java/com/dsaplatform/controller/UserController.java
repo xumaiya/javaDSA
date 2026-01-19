@@ -2,7 +2,9 @@ package com.dsaplatform.controller;
 
 import com.dsaplatform.dto.response.ApiResponse;
 import com.dsaplatform.dto.response.UserDto;
+import com.dsaplatform.dto.response.UserStatsDto;
 import com.dsaplatform.service.UserService;
+import com.dsaplatform.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -14,12 +16,25 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     
     private final UserService userService;
+    private final SecurityUtil securityUtil;
     
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserDto>> getCurrentUser(Authentication authentication) {
         String email = authentication.getName();
         UserDto user = userService.getUserByEmail(email);
         return ResponseEntity.ok(ApiResponse.success(user));
+    }
+    
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<UserStatsDto>> getUserStats(Authentication authentication) {
+        Long userId = securityUtil.getUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiResponse.error("Unauthorized"));
+        }
+        
+        UserStatsDto stats = userService.getUserStats(userId);
+        return ResponseEntity.ok(ApiResponse.success(stats));
     }
     
     @GetMapping("/{id}")

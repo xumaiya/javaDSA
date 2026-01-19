@@ -6,12 +6,14 @@ import { apiService } from '../services/apiService';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
+import { useAuthStore } from '../store/authStore';
 
 export const Chapter = () => {
   const { courseId, chapterId } = useParams<{ courseId: string; chapterId: string }>();
   const [chapter, setChapter] = useState<ChapterType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { completedLessonIds } = useAuthStore();
 
   useEffect(() => {
     if (!courseId || !chapterId) return;
@@ -20,7 +22,20 @@ export const Chapter = () => {
       try {
         setLoading(true);
         const response = await apiService.getChapterById(courseId, chapterId);
-        setChapter(response.data);
+        
+        // Update lesson completion status based on backend data
+        const chapterWithCompletion = {
+          ...response.data,
+          lessons: response.data.lessons.map(lesson => {
+            const numericId = parseInt(lesson.id.split('-').pop() || '0', 10);
+            return {
+              ...lesson,
+              completed: completedLessonIds.includes(numericId),
+            };
+          }),
+        };
+        
+        setChapter(chapterWithCompletion);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch chapter');
       } finally {
@@ -29,7 +44,7 @@ export const Chapter = () => {
     };
 
     fetchChapter();
-  }, [courseId, chapterId]);
+  }, [courseId, chapterId, completedLessonIds]);
 
   if (loading) {
     return (

@@ -139,11 +139,12 @@ const getFallbackQuestions = (topic: string): QuizQuestion[] => {
 
 
 // Quiz List Component
-const QuizList = ({ quizzes, onStartQuiz, attempts, onGenerateQuiz, generatingQuizId }: { 
+const QuizList = ({ quizzes, onStartQuiz, attempts, onGenerateQuiz, onResetQuiz, generatingQuizId }: { 
   quizzes: Quiz[]; 
   onStartQuiz: (quiz: Quiz) => void;
   attempts: Record<string, QuizResult>;
   onGenerateQuiz: (courseId: string) => void;
+  onResetQuiz: (quizId: string) => void;
   generatingQuizId: string | null;
 }) => (
   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -222,6 +223,17 @@ const QuizList = ({ quizzes, onStartQuiz, attempts, onGenerateQuiz, generatingQu
                   </>
                 )}
               </Button>
+              {attempt && (
+                <Button
+                  onClick={() => onResetQuiz(quiz.id)}
+                  variant="ghost"
+                  size="sm"
+                  className="px-3 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
+                  title="Reset quiz progress"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 onClick={() => onGenerateQuiz(quiz.courseId)}
                 variant="ghost"
@@ -253,7 +265,6 @@ const QuizTaking = ({ quiz, onComplete }: {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [timeLeft, setTimeLeft] = useState(quiz.timeLimit * 60);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -269,13 +280,6 @@ const QuizTaking = ({ quiz, onComplete }: {
 
     return () => clearInterval(timer);
   }, []);
-
-  const handleReset = () => {
-    setAnswers({});
-    setCurrentQuestion(0);
-    setTimeLeft(quiz.timeLimit * 60);
-    setShowResetConfirm(false);
-  };
 
   const handleAnswer = (questionId: string, answerIndex: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: answerIndex }));
@@ -321,15 +325,6 @@ const QuizTaking = ({ quiz, onComplete }: {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowResetConfirm(true)}
-            className="text-text-muted hover:text-olive dark:text-dark-text-muted dark:hover:text-dark-accent"
-          >
-            <RotateCcw className="h-4 w-4 mr-1" />
-            Reset
-          </Button>
           <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
             timeLeft < 60 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-olive-light/50 dark:bg-dark-surface'
           }`}>
@@ -438,28 +433,6 @@ const QuizTaking = ({ quiz, onComplete }: {
                 </Button>
                 <Button onClick={handleSubmit} className="flex-1">
                   Submit
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Reset Confirm Modal */}
-      {showResetConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-olive-dark dark:text-dark-text mb-2">Reset Quiz?</h3>
-              <p className="text-text-muted dark:text-dark-text-muted mb-4">
-                This will clear all your answers and restart the timer. Are you sure?
-              </p>
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setShowResetConfirm(false)} className="flex-1">
-                  Cancel
-                </Button>
-                <Button onClick={handleReset} variant="primary" className="flex-1">
-                  Reset Quiz
                 </Button>
               </div>
             </CardContent>
@@ -688,6 +661,17 @@ export const QuizPage = () => {
     setQuizMode('taking');
   };
 
+  const handleResetQuiz = (quizId: string) => {
+    if (confirm('Are you sure you want to reset this quiz? Your previous attempt will be deleted.')) {
+      const attemptsKey = getQuizAttemptsKey();
+      const newAttempts = { ...attempts };
+      delete newAttempts[quizId];
+      setAttempts(newAttempts);
+      localStorage.setItem(attemptsKey, JSON.stringify(newAttempts));
+      console.log('✅ [handleResetQuiz] Quiz reset:', quizId);
+    }
+  };
+
   const handleQuizComplete = (result: QuizResult) => {
     setQuizResult(result);
     setQuizMode('results');
@@ -786,6 +770,7 @@ export const QuizPage = () => {
               onStartQuiz={handleStartQuiz} 
               attempts={attempts}
               onGenerateQuiz={handleGenerateNewQuiz}
+              onResetQuiz={handleResetQuiz}
               generatingQuizId={generatingQuizId}
             />
           )}

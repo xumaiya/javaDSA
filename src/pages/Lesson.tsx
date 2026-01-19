@@ -20,8 +20,11 @@ export const Lesson = () => {
   const navigate = useNavigate();
   const [lesson, setLesson] = useState<LessonType | null>(null);
   const [chapter, setChapter] = useState<ChapterType | null>(null);
+  const [lessonContent, setLessonContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [contentLoading, setContentLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [contentError, setContentError] = useState<string | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
   const { notes } = useNotes(lessonId);
   const { isLessonCompleted, addCompletedLesson } = useAuthStore();
@@ -35,13 +38,46 @@ export const Lesson = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setContentError(null);
+        
         // Fetch both lesson and chapter data in parallel
         const [lessonResponse, chapterResponse] = await Promise.all([
           apiService.getLessonById(courseId, chapterId, lessonId),
           apiService.getChapterById(courseId, chapterId),
         ]);
-        setLesson(lessonResponse.data);
-        setChapter(chapterResponse.data);
+        
+        const lessonData = lessonResponse.data;
+        const chapterData = chapterResponse.data;
+        
+        setLesson(lessonData);
+        setChapter(chapterData);
+        
+        // Now fetch the AI-generated content
+        console.log('📚 Fetching AI-generated content for lesson:', lessonData.title);
+        setContentLoading(true);
+        
+        try {
+          // Extract topic from course title (e.g., "DSA in Java - Arrays" -> "Arrays")
+          const topic = chapterData.title || 'Data Structures';
+          
+          const contentResponse = await apiService.getLessonContent(
+            lessonId,
+            lessonData.title,
+            topic
+          );
+          
+          console.log('✅ Content received:', contentResponse.data.cached ? 'from cache' : 'newly generated');
+          setLessonContent(contentResponse.data.content);
+        } catch (contentErr) {
+          console.error('❌ Failed to fetch lesson content:', contentErr);
+          setContentError(contentErr instanceof Error ? contentErr.message : 'Failed to generate lesson content');
+          // Fallback to mock content if available
+          if (lessonData.content) {
+            setLessonContent(lessonData.content);
+          }
+        } finally {
+          setContentLoading(false);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch lesson');
       } finally {
@@ -198,11 +234,56 @@ export const Lesson = () => {
           <h1 className="text-3xl font-bold text-olive-dark dark:text-olive-light mb-4">
             {lesson.title}
           </h1>
-          <div className="prose dark:prose-invert max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {lesson.content}
-            </ReactMarkdown>
-          </div>
+          
+          {contentLoading ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center space-y-3">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-olive mx-auto"></div>
+                  <p className="text-olive-dark dark:text-olive-light font-medium">
+                    🤖 Generating lesson content with AI...
+                  </p>
+                  <p className="text-sm text-text-light dark:text-gray-400">
+                    This may take a few seconds
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : contentError ? (
+            <div className="space-y-4">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <p className="text-red-600 dark:text-red-400 font-medium mb-2">
+                  ❌ Failed to generate content
+                </p>
+                <p className="text-sm text-red-600 dark:text-red-400 mb-3">
+                  {contentError}
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                >
+                  Try Again
+                </Button>
+              </div>
+              {lessonContent && (
+                <div className="prose dark:prose-invert max-w-none">
+                  <p className="text-sm text-text-light dark:text-gray-400 mb-4">
+                    Showing fallback content:
+                  </p>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {lessonContent}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="prose dark:prose-invert max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {lessonContent || lesson.content}
+              </ReactMarkdown>
+            </div>
+          )}
         </CardContent>
       </Card>
 
