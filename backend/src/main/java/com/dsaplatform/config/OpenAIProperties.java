@@ -38,11 +38,11 @@ public class OpenAIProperties {
     
     /**
      * Maximum number of tokens in the response.
-     * Default: 500
+     * Default: 3500 (for quiz generation with 4 questions)
      */
     @Min(1)
     @Max(4096)
-    private int maxTokens = 500;
+    private int maxTokens = 3500;
     
     /**
      * Temperature for response generation (0.0 - 2.0).

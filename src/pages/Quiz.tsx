@@ -24,58 +24,38 @@ import { quizService } from '../services/quizService';
 
 // Quiz data for each course - now uses AI generation
 const generateQuizForCourse = async (course: Course): Promise<Quiz> => {
-  // Map course titles to DSA topics
-  const topicMap: Record<string, string> = {
-    '1': 'Arrays',
-    '2': 'Linked Lists',
-    '3': 'Stacks and Queues',
-    '4': 'Binary Trees and BST',
-    '5': 'Hash Tables and Hashing',
-    '6': 'Heaps and Priority Queues',
-    '7': 'Graphs and Graph Algorithms',
+  console.log('🎯 [generateQuizForCourse] Starting quiz generation for course:', course.title);
+  
+  // Extract topic from course title (e.g., "DSA in Java - Arrays" -> "Arrays")
+  const extractTopic = (title: string): string => {
+    const match = title.match(/DSA in Java - (.+)/);
+    return match ? match[1] : title;
   };
 
-  const topic = topicMap[course.id] || 'Data Structures and Algorithms';
+  const topic = extractTopic(course.title);
+  console.log('📝 [generateQuizForCourse] Extracted topic:', topic);
   
-  console.log(`Generating quiz for course: ${course.title} (ID: ${course.id}, Topic: ${topic})`);
-  
-  try {
-    // Generate questions using AI
-    console.log('Calling quizService.generateQuizQuestions...');
-    const questions = await quizService.generateQuizQuestions(
-      topic,
-      course.difficulty,
-      5
-    );
+  // Generate questions using AI with medium difficulty (4 questions)
+  console.log('🚀 [generateQuizForCourse] Calling quizService.generateQuizQuestions...');
+  const questions = await quizService.generateQuizQuestions(
+    topic,
+    'intermediate', // Always use medium difficulty as requested
+    4
+  );
 
-    console.log(`✅ Successfully generated ${questions.length} AI questions for ${topic}`);
+  console.log(`✅ [generateQuizForCourse] Successfully generated ${questions.length} AI questions for ${topic}`);
+  console.log('📋 [generateQuizForCourse] Questions:', questions);
 
-    return {
-      id: `quiz-${course.id}`,
-      courseId: course.id,
-      courseTitle: course.title,
-      title: `${topic} Quiz`,
-      description: `Test your knowledge of ${topic} in Java. Answer all questions to see your score.`,
-      questions,
-      timeLimit: 10,
-      passingScore: 60,
-    };
-  } catch (error) {
-    console.error(`❌ Failed to generate AI quiz for ${topic}:`, error);
-    console.log(`Using fallback questions for ${topic}`);
-    
-    // Return fallback quiz with static questions
-    return {
-      id: `quiz-${course.id}`,
-      courseId: course.id,
-      courseTitle: course.title,
-      title: `${topic} Quiz`,
-      description: `Test your knowledge of ${topic} in Java. Answer all questions to see your score.`,
-      questions: getFallbackQuestions(topic),
-      timeLimit: 10,
-      passingScore: 60,
-    };
-  }
+  return {
+    id: `quiz-${course.id}`,
+    courseId: course.id,
+    courseTitle: course.title,
+    title: `${topic} Quiz - AI Generated`,
+    description: `Test your knowledge of ${topic} in Java with AI-generated medium difficulty questions.`,
+    questions,
+    timeLimit: 10,
+    passingScore: 60,
+  };
 };
 
 // Fallback questions if AI generation fails
@@ -639,6 +619,7 @@ export const QuizPage = () => {
         const response = await apiService.getCourses();
         // Filter only enrolled courses
         const enrolled = response.data.filter((course) => course.enrolledAt);
+        console.log('📚 [loadCourses] Found enrolled courses:', enrolled.length);
         setEnrolledCourses(enrolled);
         
         // Load saved attempts from user-specific localStorage
@@ -650,41 +631,52 @@ export const QuizPage = () => {
 
         // Generate quizzes for enrolled courses with AI
         if (enrolled.length > 0) {
+          console.log('🚀 [loadCourses] Generating quizzes for', enrolled.length, 'courses...');
           setLoading(true);
           const generatedQuizzes = await Promise.all(
             enrolled.map(course => generateQuizForCourse(course))
           );
+          console.log('✅ [loadCourses] Generated', generatedQuizzes.length, 'quizzes');
           setQuizzes(generatedQuizzes);
+        } else {
+          console.log('⚠️ [loadCourses] No enrolled courses found');
         }
       } catch (error) {
-        console.error('Failed to load courses:', error);
+        console.error('💥 [loadCourses] Failed to load courses:', error);
       } finally {
         setLoading(false);
       }
     };
 
     if (isAuthenticated) {
+      console.log('✅ [useEffect] User is authenticated, loading courses...');
       loadCourses();
     } else {
+      console.log('⚠️ [useEffect] User not authenticated');
       setLoading(false);
     }
   }, [isAuthenticated, user]);
 
   const handleGenerateNewQuiz = async (courseId: string) => {
+    console.log('🔄 [handleGenerateNewQuiz] Generating new quiz for course:', courseId);
     setGeneratingQuizId(courseId);
     try {
       const course = enrolledCourses.find(c => c.id === courseId);
-      if (!course) return;
+      if (!course) {
+        console.error('❌ [handleGenerateNewQuiz] Course not found:', courseId);
+        return;
+      }
 
+      console.log('📚 [handleGenerateNewQuiz] Found course:', course.title);
+      
       // Generate fresh quiz with AI
       const newQuiz = await generateQuizForCourse(course);
       setQuizzes(prev => prev.map(q => q.courseId === courseId ? newQuiz : q));
       
-      // Show success message
-      console.log('Generated new quiz questions for', course.title);
+      console.log('✅ [handleGenerateNewQuiz] Successfully generated new quiz for', course.title);
     } catch (error) {
-      console.error('Failed to generate new quiz:', error);
-      alert('Failed to generate new quiz questions. Using fallback questions.');
+      console.error('💥 [handleGenerateNewQuiz] Failed to generate new quiz:', error);
+      alert(`Failed to generate quiz: ${error instanceof Error ? error.message : 'Unknown error'}\n\nCheck console for details.`);
     } finally {
       setGeneratingQuizId(null);
     }

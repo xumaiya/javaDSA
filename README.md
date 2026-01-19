@@ -7,6 +7,7 @@ A modern, interactive platform for mastering Data Structures and Algorithms with
 - 📚 **Comprehensive Courses** - Structured lessons covering all major DSA topics
 - 💻 **Real-Time Code Editor** - Write, compile, and execute Java code in your browser
 - 🤖 **AI Chatbot** - Get instant help with RAG-powered AI assistant
+- 📝 **Dynamic Quizzes** - AI-generated questions with medium difficulty for each topic
 - 🎮 **Gamification** - Earn points, maintain streaks, and unlock badges
 - 📊 **Progress Tracking** - Monitor your learning journey with detailed analytics
 - 🎨 **Modern UI** - Beautiful glass morphism design with smooth animations
@@ -67,9 +68,16 @@ The AI chatbot requires an OpenRouter API key:
 
 Detailed documentation is available in the [`docs/`](./docs) folder:
 
+- [Quiz Feature Guide](./QUIZ_QUICK_START.md) - Dynamic quiz generation with AI
 - [Code Editor Guide](./docs/HOW_TO_USE_CODE_EDITOR.md)
 - [Git Collaboration Guide](./docs/GIT_GUIDE.md)
 - [Dashboard Features](./docs/DASHBOARD_FEATURES.md)
+
+### Quiz Feature Documentation
+- [Quick Start Guide](./QUIZ_QUICK_START.md) - Get started in 5 minutes
+- [Feature Guide](./docs/QUIZ_FEATURE_GUIDE.md) - Complete feature documentation
+- [Architecture](./docs/QUIZ_ARCHITECTURE.md) - System architecture and design
+- [Testing Guide](./docs/QUIZ_TESTING_GUIDE.md) - Testing procedures
 
 ## 🛠️ Tech Stack
 
