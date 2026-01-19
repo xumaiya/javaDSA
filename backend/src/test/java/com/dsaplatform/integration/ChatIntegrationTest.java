@@ -160,8 +160,8 @@ class ChatIntegrationTest {
                             .toList();
                 });
 
-        // Mock chat completion
-        when(openAIClient.createChatCompletion(anyString(), anyString()))
+        // Mock chat completion with history
+        when(openAIClient.createChatCompletionWithHistory(anyString(), anyString(), anyList()))
                 .thenReturn("Arrays are fundamental data structures that store elements in contiguous memory locations. " +
                         "They provide constant-time O(1) access to elements by index.");
     }
@@ -440,7 +440,7 @@ class ChatIntegrationTest {
         mockMvc.perform(post("/api/chat/ask")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     /**

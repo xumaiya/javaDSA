@@ -12,6 +12,7 @@ import {
   BookOpen,
   Timer,
   Target,
+  Sparkles,
 } from 'lucide-react';
 import { Quiz, QuizQuestion, QuizResult, Course } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -19,170 +20,157 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { Loader } from '../components/ui/Loader';
 import { apiService } from '../services/apiService';
+import { quizService } from '../services/quizService';
 
-// Quiz data for each course
-const generateQuizForCourse = (course: Course): Quiz => {
-  const quizQuestions: Record<string, QuizQuestion[]> = {
-    '1': [ // Data Structures Fundamentals
+// Quiz data for each course - now uses AI generation
+const generateQuizForCourse = async (course: Course): Promise<Quiz> => {
+  // Map course titles to DSA topics
+  const topicMap: Record<string, string> = {
+    '1': 'Arrays',
+    '2': 'Linked Lists',
+    '3': 'Stacks and Queues',
+    '4': 'Binary Trees and BST',
+    '5': 'Hash Tables and Hashing',
+    '6': 'Heaps and Priority Queues',
+    '7': 'Graphs and Graph Algorithms',
+  };
+
+  const topic = topicMap[course.id] || 'Data Structures and Algorithms';
+  
+  console.log(`Generating quiz for course: ${course.title} (ID: ${course.id}, Topic: ${topic})`);
+  
+  try {
+    // Generate questions using AI
+    console.log('Calling quizService.generateQuizQuestions...');
+    const questions = await quizService.generateQuizQuestions(
+      topic,
+      course.difficulty,
+      5
+    );
+
+    console.log(`✅ Successfully generated ${questions.length} AI questions for ${topic}`);
+
+    return {
+      id: `quiz-${course.id}`,
+      courseId: course.id,
+      courseTitle: course.title,
+      title: `${topic} Quiz`,
+      description: `Test your knowledge of ${topic} in Java. Answer all questions to see your score.`,
+      questions,
+      timeLimit: 10,
+      passingScore: 60,
+    };
+  } catch (error) {
+    console.error(`❌ Failed to generate AI quiz for ${topic}:`, error);
+    console.log(`Using fallback questions for ${topic}`);
+    
+    // Return fallback quiz with static questions
+    return {
+      id: `quiz-${course.id}`,
+      courseId: course.id,
+      courseTitle: course.title,
+      title: `${topic} Quiz`,
+      description: `Test your knowledge of ${topic} in Java. Answer all questions to see your score.`,
+      questions: getFallbackQuestions(topic),
+      timeLimit: 10,
+      passingScore: 60,
+    };
+  }
+};
+
+// Fallback questions if AI generation fails
+const getFallbackQuestions = (topic: string): QuizQuestion[] => {
+  const fallbackMap: Record<string, QuizQuestion[]> = {
+    'Arrays': [
       {
-        id: 'q1-1',
-        question: 'What is the time complexity of accessing an element in an array by index?',
-        options: ['O(1)', 'O(n)', 'O(log n)', 'O(n²)'],
-        correctAnswer: 0,
-        explanation: 'Arrays provide constant time O(1) access because elements are stored in contiguous memory locations.',
-      },
-      {
-        id: 'q1-2',
-        question: 'Which data structure follows LIFO (Last In First Out) principle?',
-        options: ['Queue', 'Stack', 'Array', 'Linked List'],
+        id: 'q1',
+        question: 'What is an array in Java?',
+        options: [
+          'A collection of different data types',
+          'A fixed-size collection of elements of the same type',
+          'A dynamic list that can grow',
+          'A type of loop'
+        ],
         correctAnswer: 1,
-        explanation: 'Stack follows LIFO - the last element added is the first one to be removed.',
+        explanation: 'An array in Java is like a row of numbered boxes that can only hold one type of thing (like all integers or all strings). Once you create it, the size stays the same!',
       },
       {
-        id: 'q1-3',
-        question: 'What is the main advantage of a linked list over an array?',
-        options: ['Faster access time', 'Dynamic size', 'Less memory usage', 'Better cache performance'],
+        id: 'q2',
+        question: 'How do you access the first element of an array in Java?',
+        options: ['array[1]', 'array[0]', 'array.first()', 'array.get(0)'],
         correctAnswer: 1,
-        explanation: 'Linked lists can grow or shrink dynamically without needing to reallocate memory.',
+        explanation: 'In Java, arrays start counting from 0, not 1! So the first element is at position 0, like the ground floor of a building.',
       },
       {
-        id: 'q1-4',
-        question: 'In a binary tree, what is the maximum number of nodes at level k?',
-        options: ['k', '2k', '2^k', 'k²'],
+        id: 'q3',
+        question: 'What happens if you try to access array[10] in an array of size 5?',
+        options: [
+          'It returns 0',
+          'It returns null',
+          'It throws ArrayIndexOutOfBoundsException',
+          'It automatically expands the array'
+        ],
         correctAnswer: 2,
-        explanation: 'At level k, a binary tree can have at most 2^k nodes.',
-      },
-      {
-        id: 'q1-5',
-        question: 'Which operation is NOT typically O(1) for a hash table?',
-        options: ['Insert', 'Delete', 'Search', 'Traversal'],
-        correctAnswer: 3,
-        explanation: 'Traversing all elements in a hash table is O(n), while insert, delete, and search are typically O(1).',
+        explanation: 'Java throws an error called ArrayIndexOutOfBoundsException - it\'s like trying to open locker number 10 when there are only 5 lockers!',
       },
     ],
-    '2': [ // Algorithm Design & Analysis
+    'Linked Lists': [
       {
-        id: 'q2-1',
-        question: 'What is the time complexity of binary search?',
-        options: ['O(1)', 'O(n)', 'O(log n)', 'O(n log n)'],
-        correctAnswer: 2,
-        explanation: 'Binary search divides the search space in half each iteration, resulting in O(log n).',
-      },
-      {
-        id: 'q2-2',
-        question: 'Which sorting algorithm has the best average-case time complexity?',
-        options: ['Bubble Sort', 'Selection Sort', 'Quick Sort', 'Insertion Sort'],
-        correctAnswer: 2,
-        explanation: 'Quick Sort has an average time complexity of O(n log n).',
-      },
-      {
-        id: 'q2-3',
-        question: 'What technique does merge sort use?',
-        options: ['Greedy', 'Dynamic Programming', 'Divide and Conquer', 'Backtracking'],
-        correctAnswer: 2,
-        explanation: 'Merge sort divides the array, sorts each half, and merges them back together.',
-      },
-      {
-        id: 'q2-4',
-        question: 'What is the space complexity of merge sort?',
-        options: ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'],
-        correctAnswer: 2,
-        explanation: 'Merge sort requires O(n) additional space for the temporary arrays during merging.',
-      },
-      {
-        id: 'q2-5',
-        question: 'Which algorithm is best for finding the shortest path in an unweighted graph?',
-        options: ['DFS', 'BFS', 'Dijkstra', 'Bellman-Ford'],
+        id: 'q1',
+        question: 'What is a linked list?',
+        options: [
+          'An array with links',
+          'A chain of nodes where each node points to the next',
+          'A list stored in a file',
+          'A sorted array'
+        ],
         correctAnswer: 1,
-        explanation: 'BFS finds the shortest path in unweighted graphs as it explores level by level.',
+        explanation: 'A linked list is like a treasure hunt where each clue (node) tells you where the next clue is. Each piece of data knows where to find the next piece!',
       },
-    ],
-    '3': [ // Advanced Data Structures
       {
-        id: 'q3-1',
-        question: 'What is the height of a balanced AVL tree with n nodes?',
-        options: ['O(n)', 'O(log n)', 'O(n²)', 'O(1)'],
+        id: 'q2',
+        question: 'What does each node in a singly linked list contain?',
+        options: [
+          'Only data',
+          'Data and a link to the next node',
+          'Data and links to previous and next nodes',
+          'Just a link'
+        ],
         correctAnswer: 1,
-        explanation: 'AVL trees maintain balance, ensuring height is always O(log n).',
+        explanation: 'Each node in a singly linked list has two parts: the data it stores and a pointer (like an arrow) showing where the next node is.',
       },
       {
-        id: 'q3-2',
-        question: 'What is the main advantage of a B-tree over a binary search tree?',
-        options: ['Simpler implementation', 'Better for disk-based storage', 'Faster in-memory operations', 'Less memory usage'],
-        correctAnswer: 1,
-        explanation: 'B-trees minimize disk I/O by storing multiple keys per node, making them ideal for databases.',
-      },
-      {
-        id: 'q3-3',
-        question: 'What data structure is used to implement a priority queue efficiently?',
-        options: ['Array', 'Linked List', 'Heap', 'Stack'],
+        id: 'q3',
+        question: 'What is the advantage of linked lists over arrays?',
+        options: [
+          'Faster access to elements',
+          'Uses less memory',
+          'Can easily grow and shrink',
+          'Better for sorting'
+        ],
         correctAnswer: 2,
-        explanation: 'Heaps provide O(log n) insert and extract-min/max operations for priority queues.',
-      },
-      {
-        id: 'q3-4',
-        question: 'What is a trie primarily used for?',
-        options: ['Sorting numbers', 'String prefix matching', 'Graph traversal', 'Matrix operations'],
-        correctAnswer: 1,
-        explanation: 'Tries are optimized for string operations like prefix matching and autocomplete.',
-      },
-      {
-        id: 'q3-5',
-        question: 'What is the time complexity of union operation in Union-Find with path compression?',
-        options: ['O(1)', 'O(log n)', 'O(α(n))', 'O(n)'],
-        correctAnswer: 2,
-        explanation: 'With path compression and union by rank, operations are nearly O(1), specifically O(α(n)) where α is the inverse Ackermann function.',
+        explanation: 'Linked lists can easily grow bigger or smaller - like adding or removing train cars. Arrays have a fixed size once created!',
       },
     ],
   };
 
-  const defaultQuestions: QuizQuestion[] = [
-    {
-      id: 'default-1',
-      question: 'What is an algorithm?',
-      options: ['A programming language', 'A step-by-step procedure to solve a problem', 'A data structure', 'A type of computer'],
-      correctAnswer: 1,
-      explanation: 'An algorithm is a well-defined sequence of steps to solve a specific problem.',
-    },
-    {
-      id: 'default-2',
-      question: 'What does DSA stand for?',
-      options: ['Data Science Analysis', 'Data Structures and Algorithms', 'Digital System Architecture', 'Dynamic Software Application'],
-      correctAnswer: 1,
-      explanation: 'DSA stands for Data Structures and Algorithms.',
-    },
-    {
-      id: 'default-3',
-      question: 'Which is NOT a linear data structure?',
-      options: ['Array', 'Linked List', 'Tree', 'Queue'],
-      correctAnswer: 2,
-      explanation: 'Trees are hierarchical (non-linear) data structures, while arrays, linked lists, and queues are linear.',
-    },
-  ];
-
-  return {
-    id: `quiz-${course.id}`,
-    courseId: course.id,
-    courseTitle: course.title,
-    title: `${course.title} Quiz`,
-    description: `Test your knowledge of ${course.title}. Answer all questions to see your score.`,
-    questions: quizQuestions[course.id] || defaultQuestions,
-    timeLimit: 10,
-    passingScore: 60,
-  };
+  return fallbackMap[topic] || fallbackMap['Arrays'];
 };
 
 
 // Quiz List Component
-const QuizList = ({ quizzes, onStartQuiz, attempts }: { 
+const QuizList = ({ quizzes, onStartQuiz, attempts, onGenerateQuiz, generatingQuizId }: { 
   quizzes: Quiz[]; 
   onStartQuiz: (quiz: Quiz) => void;
   attempts: Record<string, QuizResult>;
+  onGenerateQuiz: (courseId: string) => void;
+  generatingQuizId: string | null;
 }) => (
   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
     {quizzes.map((quiz, index) => {
       const attempt = attempts[quiz.id];
       const hasPassed = attempt?.passed;
+      const isGenerating = generatingQuizId === quiz.courseId;
       
       return (
         <Card 
@@ -193,7 +181,11 @@ const QuizList = ({ quizzes, onStartQuiz, attempts }: {
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-olive to-olive-dark dark:from-dark-accent dark:to-green-500 flex items-center justify-center shadow-lg">
-                <ClipboardList className="h-7 w-7 text-white" />
+                {isGenerating ? (
+                  <Loader size="sm" />
+                ) : (
+                  <ClipboardList className="h-7 w-7 text-white" />
+                )}
               </div>
               {attempt && (
                 <div className={`px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
@@ -231,14 +223,40 @@ const QuizList = ({ quizzes, onStartQuiz, attempts }: {
               </div>
             )}
             
-            <Button 
-              onClick={() => onStartQuiz(quiz)} 
-              className={`w-full ${attempt ? 'backdrop-blur-sm bg-white/50 dark:bg-dark-surface/50 hover:bg-white/80 dark:hover:bg-dark-surface/80' : 'bg-gradient-to-r from-olive to-olive-dark dark:from-dark-accent dark:to-green-500 shadow-lg'} hover:scale-105 transition-all duration-300`}
-              variant={attempt ? 'outline' : 'primary'}
-            >
-              {attempt ? 'Retake Quiz' : 'Start Quiz'}
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => onStartQuiz(quiz)} 
+                className={`flex-1 ${attempt ? 'backdrop-blur-sm bg-white/50 dark:bg-dark-surface/50 hover:bg-white/80 dark:hover:bg-dark-surface/80' : 'bg-gradient-to-r from-olive to-olive-dark dark:from-dark-accent dark:to-green-500 shadow-lg'} hover:scale-105 transition-all duration-300`}
+                variant={attempt ? 'outline' : 'primary'}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader size="sm" />
+                    <span className="ml-2">Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    {attempt ? 'Retake Quiz' : 'Start Quiz'}
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => onGenerateQuiz(quiz.courseId)}
+                variant="ghost"
+                size="sm"
+                disabled={isGenerating}
+                className="px-3 hover:bg-olive-light/30 dark:hover:bg-dark-surface-hover"
+                title={isGenerating ? "Generating new questions..." : "Generate new AI questions"}
+              >
+                {isGenerating ? (
+                  <Loader size="sm" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       );
@@ -247,15 +265,15 @@ const QuizList = ({ quizzes, onStartQuiz, attempts }: {
 );
 
 // Quiz Taking Component
-const QuizTaking = ({ quiz, onComplete, onCancel }: { 
+const QuizTaking = ({ quiz, onComplete }: { 
   quiz: Quiz; 
   onComplete: (result: QuizResult) => void;
-  onCancel: () => void;
 }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [timeLeft, setTimeLeft] = useState(quiz.timeLimit * 60);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -271,6 +289,13 @@ const QuizTaking = ({ quiz, onComplete, onCancel }: {
 
     return () => clearInterval(timer);
   }, []);
+
+  const handleReset = () => {
+    setAnswers({});
+    setCurrentQuestion(0);
+    setTimeLeft(quiz.timeLimit * 60);
+    setShowResetConfirm(false);
+  };
 
   const handleAnswer = (questionId: string, answerIndex: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: answerIndex }));
@@ -315,11 +340,22 @@ const QuizTaking = ({ quiz, onComplete, onCancel }: {
             Question {currentQuestion + 1} of {quiz.questions.length}
           </p>
         </div>
-        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-          timeLeft < 60 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-olive-light/50 dark:bg-dark-surface'
-        }`}>
-          <Clock className="h-5 w-5" />
-          <span className="font-mono font-semibold">{formatTime(timeLeft)}</span>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowResetConfirm(true)}
+            className="text-text-muted hover:text-olive dark:text-dark-text-muted dark:hover:text-dark-accent"
+          >
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Reset
+          </Button>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+            timeLeft < 60 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-olive-light/50 dark:bg-dark-surface'
+          }`}>
+            <Clock className="h-5 w-5" />
+            <span className="font-mono font-semibold">{formatTime(timeLeft)}</span>
+          </div>
         </div>
       </div>
 
@@ -422,6 +458,28 @@ const QuizTaking = ({ quiz, onComplete, onCancel }: {
                 </Button>
                 <Button onClick={handleSubmit} className="flex-1">
                   Submit
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Reset Confirm Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-olive-dark dark:text-dark-text mb-2">Reset Quiz?</h3>
+              <p className="text-text-muted dark:text-dark-text-muted mb-4">
+                This will clear all your answers and restart the timer. Are you sure?
+              </p>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setShowResetConfirm(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleReset} variant="primary" className="flex-1">
+                  Reset Quiz
                 </Button>
               </div>
             </CardContent>
@@ -560,13 +618,20 @@ const QuizResults = ({ quiz, result, onRetry, onBack }: {
 // Main Quiz Page Component
 export const QuizPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [attempts, setAttempts] = useState<Record<string, QuizResult>>({});
   const [quizMode, setQuizMode] = useState<'list' | 'taking' | 'results'>('list');
+  const [generatingQuizId, setGeneratingQuizId] = useState<string | null>(null);
+
+  // Get user-specific storage key for quiz attempts
+  const getQuizAttemptsKey = () => {
+    return user ? `quiz_attempts_${user.id}` : 'quiz_attempts';
+  };
 
   useEffect(() => {
     const loadCourses = async () => {
@@ -576,10 +641,20 @@ export const QuizPage = () => {
         const enrolled = response.data.filter((course) => course.enrolledAt);
         setEnrolledCourses(enrolled);
         
-        // Load saved attempts from localStorage
-        const savedAttempts = localStorage.getItem('quiz_attempts');
+        // Load saved attempts from user-specific localStorage
+        const attemptsKey = getQuizAttemptsKey();
+        const savedAttempts = localStorage.getItem(attemptsKey);
         if (savedAttempts) {
           setAttempts(JSON.parse(savedAttempts));
+        }
+
+        // Generate quizzes for enrolled courses with AI
+        if (enrolled.length > 0) {
+          setLoading(true);
+          const generatedQuizzes = await Promise.all(
+            enrolled.map(course => generateQuizForCourse(course))
+          );
+          setQuizzes(generatedQuizzes);
         }
       } catch (error) {
         console.error('Failed to load courses:', error);
@@ -593,7 +668,27 @@ export const QuizPage = () => {
     } else {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
+
+  const handleGenerateNewQuiz = async (courseId: string) => {
+    setGeneratingQuizId(courseId);
+    try {
+      const course = enrolledCourses.find(c => c.id === courseId);
+      if (!course) return;
+
+      // Generate fresh quiz with AI
+      const newQuiz = await generateQuizForCourse(course);
+      setQuizzes(prev => prev.map(q => q.courseId === courseId ? newQuiz : q));
+      
+      // Show success message
+      console.log('Generated new quiz questions for', course.title);
+    } catch (error) {
+      console.error('Failed to generate new quiz:', error);
+      alert('Failed to generate new quiz questions. Using fallback questions.');
+    } finally {
+      setGeneratingQuizId(null);
+    }
+  };
 
   const handleStartQuiz = (quiz: Quiz) => {
     setActiveQuiz(quiz);
@@ -605,11 +700,12 @@ export const QuizPage = () => {
     setQuizResult(result);
     setQuizMode('results');
     
-    // Save attempt
+    // Save attempt to user-specific storage
     if (activeQuiz) {
+      const attemptsKey = getQuizAttemptsKey();
       const newAttempts = { ...attempts, [activeQuiz.id]: result };
       setAttempts(newAttempts);
-      localStorage.setItem('quiz_attempts', JSON.stringify(newAttempts));
+      localStorage.setItem(attemptsKey, JSON.stringify(newAttempts));
     }
   };
 
@@ -649,9 +745,6 @@ export const QuizPage = () => {
     );
   }
 
-  // Generate quizzes for enrolled courses
-  const quizzes = enrolledCourses.map(generateQuizForCourse);
-
   return (
     <div className="space-y-6">
       {quizMode === 'list' && (
@@ -662,7 +755,7 @@ export const QuizPage = () => {
               Quizzes
             </h1>
             <p className="text-text-muted dark:text-dark-text-muted mt-2">
-              Test your knowledge with quizzes from your enrolled courses
+              Test your knowledge with AI-generated quizzes from your enrolled DSA in Java courses
             </p>
           </div>
 
@@ -676,7 +769,7 @@ export const QuizPage = () => {
                   No Quizzes Available
                 </h3>
                 <p className="text-text-muted dark:text-dark-text-muted mb-6">
-                  Enroll in courses to unlock quizzes and test your knowledge.
+                  Enroll in DSA in Java courses to unlock AI-powered quizzes and test your knowledge.
                 </p>
                 <Button 
                   onClick={() => navigate('/courses')}
@@ -686,8 +779,23 @@ export const QuizPage = () => {
                 </Button>
               </CardContent>
             </Card>
+          ) : loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Loader size="lg" />
+                <p className="mt-4 text-text-muted dark:text-dark-text-muted">
+                  Generating AI-powered quiz questions...
+                </p>
+              </div>
+            </div>
           ) : (
-            <QuizList quizzes={quizzes} onStartQuiz={handleStartQuiz} attempts={attempts} />
+            <QuizList 
+              quizzes={quizzes} 
+              onStartQuiz={handleStartQuiz} 
+              attempts={attempts}
+              onGenerateQuiz={handleGenerateNewQuiz}
+              generatingQuizId={generatingQuizId}
+            />
           )}
         </>
       )}
@@ -696,7 +804,6 @@ export const QuizPage = () => {
         <QuizTaking 
           quiz={activeQuiz} 
           onComplete={handleQuizComplete}
-          onCancel={handleBackToList}
         />
       )}
 

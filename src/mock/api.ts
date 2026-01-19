@@ -15,12 +15,73 @@ import { getLessonContent } from './courseContent';
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// LocalStorage keys
+// LocalStorage keys - now user-specific
 const NOTES_STORAGE_KEY = 'dsa_platform_notes';
-const COURSES_STORAGE_KEY = 'dsa_platform_courses';
+const USER_DATA_STORAGE_KEY = 'dsa_platform_user_data';
 
-// Helper to get/set localStorage data
+// Get current user ID from auth storage
+const getCurrentUserId = (): string | null => {
+  try {
+    const authStorage = localStorage.getItem('auth-storage');
+    if (authStorage) {
+      const parsed = JSON.parse(authStorage);
+      return parsed.state?.user?.id || null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+};
+
+// User-specific data structure
+interface UserData {
+  courses: Course[];
+  notes: Note[];
+  quizAttempts: Record<string, any>;
+}
+
+// Helper to get/set user-specific data
+const getUserData = (userId: string): UserData => {
+  try {
+    const allUserData = localStorage.getItem(USER_DATA_STORAGE_KEY);
+    if (allUserData) {
+      const parsed = JSON.parse(allUserData);
+      if (parsed[userId]) {
+        return parsed[userId];
+      }
+    }
+  } catch {
+    // Fall through to default
+  }
+  
+  // Return fresh copy of mock courses for new user
+  return {
+    courses: JSON.parse(JSON.stringify(mockCourses)),
+    notes: [],
+    quizAttempts: {},
+  };
+};
+
+const setUserData = (userId: string, userData: UserData) => {
+  try {
+    const allUserData = localStorage.getItem(USER_DATA_STORAGE_KEY);
+    const parsed = allUserData ? JSON.parse(allUserData) : {};
+    parsed[userId] = userData;
+    localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(parsed));
+  } catch (error) {
+    console.error('Failed to save user data:', error);
+  }
+};
+
+// Legacy support - migrate old data if exists
 const getStoredNotes = (): Note[] => {
+  const userId = getCurrentUserId();
+  if (userId) {
+    const userData = getUserData(userId);
+    return userData.notes;
+  }
+  
+  // Fallback to legacy storage
   try {
     const stored = localStorage.getItem(NOTES_STORAGE_KEY);
     return stored ? JSON.parse(stored) : [];
@@ -30,24 +91,36 @@ const getStoredNotes = (): Note[] => {
 };
 
 const setStoredNotes = (notes: Note[]) => {
-  localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
-};
-
-const getStoredCourses = (): Course[] => {
-  try {
-    const stored = localStorage.getItem(COURSES_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : mockCourses;
-  } catch {
-    return mockCourses;
+  const userId = getCurrentUserId();
+  if (userId) {
+    const userData = getUserData(userId);
+    userData.notes = notes;
+    setUserData(userId, userData);
+  } else {
+    // Fallback to legacy storage
+    localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
   }
 };
 
-const setStoredCourses = (courses: Course[]) => {
-  localStorage.setItem(COURSES_STORAGE_KEY, JSON.stringify(courses));
+const getStoredCourses = (): Course[] => {
+  const userId = getCurrentUserId();
+  if (userId) {
+    const userData = getUserData(userId);
+    return userData.courses;
+  }
+  
+  // Fallback to fresh mock courses
+  return JSON.parse(JSON.stringify(mockCourses));
 };
 
-// Initialize courses from localStorage or mock data
-let courses = getStoredCourses();
+const setStoredCourses = (courses: Course[]) => {
+  const userId = getCurrentUserId();
+  if (userId) {
+    const userData = getUserData(userId);
+    userData.courses = courses;
+    setUserData(userId, userData);
+  }
+};
 
 // Mock API Service
 class MockApiService {
@@ -106,13 +179,13 @@ class MockApiService {
   // Courses
   async getCourses(): Promise<ApiResponse<Course[]>> {
     await delay(600);
-    courses = getStoredCourses();
+    const courses = getStoredCourses();
     return { data: courses };
   }
 
   async getCourseById(courseId: string): Promise<ApiResponse<Course>> {
     await delay(500);
-    courses = getStoredCourses();
+    const courses = getStoredCourses();
     const course = courses.find(c => c.id === courseId);
     if (!course) throw new Error('Course not found');
     return { data: course };
@@ -120,7 +193,7 @@ class MockApiService {
 
   async enrollInCourse(courseId: string): Promise<ApiResponse<Course>> {
     await delay(700);
-    courses = getStoredCourses();
+    const courses = getStoredCourses();
     const courseIndex = courses.findIndex(c => c.id === courseId);
     if (courseIndex === -1) throw new Error('Course not found');
     
@@ -136,7 +209,7 @@ class MockApiService {
   // Chapters
   async getChapterById(courseId: string, chapterId: string): Promise<ApiResponse<Chapter>> {
     await delay(400);
-    courses = getStoredCourses();
+    const courses = getStoredCourses();
     const course = courses.find(c => c.id === courseId);
     if (!course) throw new Error('Course not found');
     const chapter = course.chapters.find(ch => ch.id === chapterId);
@@ -147,7 +220,7 @@ class MockApiService {
   // Lessons
   async getLessonById(courseId: string, chapterId: string, lessonId: string): Promise<ApiResponse<Lesson>> {
     await delay(400);
-    courses = getStoredCourses();
+    const courses = getStoredCourses();
     const course = courses.find(c => c.id === courseId);
     if (!course) throw new Error('Course not found');
     const chapter = course.chapters.find(ch => ch.id === chapterId);
@@ -162,7 +235,7 @@ class MockApiService {
 
   async completeLesson(lessonId: string): Promise<ApiResponse<Lesson>> {
     await delay(500);
-    courses = getStoredCourses();
+    const courses = getStoredCourses();
     
     for (const course of courses) {
       for (const chapter of course.chapters) {

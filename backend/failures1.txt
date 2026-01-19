@@ -1,0 +1,6 @@
+﻿TEST: testQuestionAnsweringFlow
+FAILURE: Expected a non-empty value at JSON path "$.data.content" but found: null
+---
+TEST: testUnauthorizedAccess
+FAILURE: Status expected:<401> but was:<403>
+---

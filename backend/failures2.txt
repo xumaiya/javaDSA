@@ -1,0 +1,32 @@
+﻿TEST: chatLogCompletedWithResponseData(String)[1]
+FAILURE: [Bot response should be stored] 
+Expecting not blank but was: null
+---
+TEST: chatLogCompletedWithResponseData(String)[2]
+FAILURE: [Bot response should be stored] 
+Expecting not blank but was: null
+---
+TEST: chatLogCompletedWithResponseData(String)[3]
+FAILURE: [Bot response should be stored] 
+Expecting not blank but was: null
+---
+TEST: chatLogCompletedWithResponseData(String)[4]
+FAILURE: [Bot response should be stored] 
+Expecting not blank but was: null
+---
+TEST: chatResponseContainsRequiredMetadata(String)[1]
+FAILURE: [Response content should not be empty] 
+Expecting not blank but was: null
+---
+TEST: chatResponseContainsRequiredMetadata(String)[2]
+FAILURE: [Response content should not be empty] 
+Expecting not blank but was: null
+---
+TEST: chatResponseContainsRequiredMetadata(String)[3]
+FAILURE: [Response content should not be empty] 
+Expecting not blank but was: null
+---
+TEST: chatResponseContainsRequiredMetadata(String)[4]
+FAILURE: [Response content should not be empty] 
+Expecting not blank but was: null
+---

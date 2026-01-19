@@ -131,7 +131,7 @@ class ChatServicePropertyTest {
                     return texts.stream().map(t -> mockEmbedding).toList();
                 });
 
-        when(openAIClient.createChatCompletion(anyString(), anyString()))
+        when(openAIClient.createChatCompletionWithHistory(anyString(), anyString(), anyList()))
                 .thenReturn("This is a test response about arrays and data structures.");
     }
 
